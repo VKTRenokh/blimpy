@@ -3,6 +3,7 @@ const std = @import("std");
 pub fn enableRawMode(fd: std.posix.fd_t) !void {
     const state = try std.posix.tcgetattr(fd);
     var raw = state;
+
     raw.iflag.IGNBRK = false;
     raw.iflag.BRKINT = false;
     raw.iflag.PARMRK = false;
@@ -17,7 +18,6 @@ pub fn enableRawMode(fd: std.posix.fd_t) !void {
     raw.lflag.ECHO = false;
     raw.lflag.ECHONL = false;
     raw.lflag.ICANON = false;
-    raw.lflag.ISIG = false;
     raw.lflag.IEXTEN = false;
 
     raw.cflag.CSIZE = .CS8;
@@ -34,7 +34,7 @@ pub fn main() !void {
 
     try enableRawMode(tty);
 
-    var buffer: [100]u8 = undefined;
+    var buffer: [4]u8 = undefined;
 
     const stdin = std.io.getStdIn();
     const stdout = std.io.getStdOut();
