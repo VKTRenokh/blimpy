@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn enableRawMode(fd: std.posix.fd_t) !void {
+fn enableRawMode(fd: std.posix.fd_t) !void {
     const state = try std.posix.tcgetattr(fd);
     var raw = state;
 
@@ -29,6 +29,10 @@ pub fn enableRawMode(fd: std.posix.fd_t) !void {
     try std.posix.tcsetattr(fd, .FLUSH, raw);
 }
 
+fn handleSig(sig: c_int) callconv(.C) void {
+    std.debug.print("bye", .{sig});
+}
+
 pub fn main() !void {
     const tty = try std.posix.open("/dev/tty", .{ .ACCMODE = .RDWR }, 0);
 
@@ -39,9 +43,19 @@ pub fn main() !void {
     const stdin = std.io.getStdIn();
     const stdout = std.io.getStdOut();
 
+    var sa: std.os.linux.Sigaction = .{
+        .handler = .{ .handler = handleSig },
+        .mask = std.os.linux.empty_sigset,
+        .flags = 0,
+    };
+
     while (true) {
-        _ = try stdin.read(&buffer);
+        if (std.os.linux.sigaction(std.os.linux.SIG.INT, &sa, null) != 0) {
+            return error.Test;
+        }
 
         try stdout.writeAll("blimpy ");
+
+        _ = try stdin.read(&buffer);
     }
 }
